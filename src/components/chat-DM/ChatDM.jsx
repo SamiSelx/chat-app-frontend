@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import ScrollToBottom from 'react-scroll-to-bottom'
 import useUser from "../../hooks/useUser"
 import useSocket from "../../hooks/useSocket"
+import { MdOutlineFilePresent } from "react-icons/md";
+import { transformDate } from "../../utils/transformData";
 
 export default function ChatDM(){
     const [users,setUsers] = useState([])
@@ -12,8 +14,9 @@ export default function ChatDM(){
     const socket = useSocket()
     const [room,setRoom] = useState('')
     const [isRoom,setIsRoom] = useState(false)
+    const [errorRoom,setErrorRoom] = useState(null)
+    const [chatName,setChatName]= useState('')
     // const [rommList,setRoomList] = useState([])
-    
     useEffect(()=>{
       async function getConversation(){
           console.log(recieverId);
@@ -95,13 +98,15 @@ export default function ChatDM(){
       }
     }, [userSender, socket]);
 
-    function handleReciever(e){
+    function handleReciever(e,name){
         console.log(e.target.id);
+        setChatName(name)
         setIsRoom(false)
         setRecieverId(e.target.id)
     }
-    function handleRoom(e){
+    function handleRoom(e,name){
       setIsRoom(true)
+      setChatName(name)
       setRecieverId(e.target.id)
     }
     async function handleSubmit(){
@@ -110,7 +115,8 @@ export default function ChatDM(){
         const formData = new FormData()
         formData.append('message',message.message)
         formData.append('file',message.file)
-        const response = await fetch(`https://chat-app-backend-575t.onrender.com/api/message/send/${endpoint}`,{
+        try {
+          const response = await fetch(`https://chat-app-backend-575t.onrender.com/api/message/send/${endpoint}`,{
             method:'POST',
             body:formData,
             headers:{
@@ -120,9 +126,14 @@ export default function ChatDM(){
         const data = await response.json()
         console.log('sending message',data);
         if(response.ok){
+          console.log(data.data.createdAt);
             setMessageList([...messageList,data.data])
             setMessage({message:'',file:null})
             socket.emit("message-dm", data.data);
+            
+        }
+        } catch (error) {
+          console.log(error);
         }
         
       }
@@ -144,7 +155,8 @@ export default function ChatDM(){
             if(response.ok){
                 console.log('joining room ',room);
                 setUser({...userSender,room:[...userSender.room,room]})
-            }
+                setErrorRoom(null)
+            }else setErrorRoom(data.message)
             setRoom('')
         } catch (error) {
             console.log(error);
@@ -152,7 +164,7 @@ export default function ChatDM(){
 
       }
     //   async function createRoom(){
-    //     const response = await fetch('http://localhost:5000/api/room/create',{
+    //     const response = await fetch('https://chat-app-backend-575t.onrender.com/api/room/create',{
     //         method:'POST',
     //         body:JSON.stringify({roomName:room}),
     //         headers:{
@@ -174,7 +186,7 @@ export default function ChatDM(){
     
 
       
-
+console.log(chatName);
     return (
       <div className="flex justify-between gap-10">
         {/* Users */}
@@ -186,7 +198,7 @@ export default function ChatDM(){
                   key={user._id}
                   id={user._id}
                   className="px-2 py-4 bg-blue-400 rounded-md text-white cursor-pointer"
-                  onClick={(e) => handleReciever(e)}
+                  onClick={(e) => handleReciever(e,user.username)}
                 >
                   {user.username}
                 </li>
@@ -195,7 +207,7 @@ export default function ChatDM(){
           <h2>Rooms : </h2>
           {userSender?.room.map((roomName, index) => (
             <li
-              onClick={(e) => handleRoom(e)}
+              onClick={(e) => handleRoom(e,roomName)}
               key={index}
               id={roomName}
               className="px-2 py-4 bg-green-400 rounded-md text-white cursor-pointer"
@@ -204,85 +216,96 @@ export default function ChatDM(){
             </li>
           ))}
         </ul>
-        {/*Chat*/}
-        <div className="flex flex-col gap-3 shadow-md h-96 justify-between p-4">
-          <ScrollToBottom className="overflow-y-auto">
-            <div className="flex flex-col gap-2 ">
-              {messageList.map((msg, index) => (
-                <div
-                  key={index}
-                  className={
-                    msg.senderId !== userSender.id ? "self-end" : "self-start"
-                  }
-                >
-                  <div>
-                    <p
-                      className={`px-4 py-2 w-fit rounded-full text-white ${
-                        msg.senderId !== userSender.id
-                          ? "bg-green-500"
-                          : "bg-blue-500"
-                      }`}
-                    >
-                      {msg.message.message}
-                    </p>
-                    {msg.message.filePath && (
-                      <a
-                        href={"http://localhost:5000" + msg.message.filePath}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="cursor-pointer w-full h-full"
+        <div className="flex flex-col gap-8">
+          {/*Chat*/}
+          <div className="flex flex-col gap-3 shadow-md h-96 justify-between p-4">
+            <h1 className="text-2xl font-semibold text-center pb-2 border-b-2 border-b-blue-500">{chatName}</h1>
+            <ScrollToBottom className="overflow-y-auto">
+              <div className="flex flex-col gap-4 ">
+                {messageList.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`${msg.senderId !== userSender.id ? "self-end" : "self-start"} w-1/3`}
+                  >
+                    <div>
+                      <p
+                        className={`px-4 py-2 w-fit rounded-full text-white ${
+                          msg.senderId !== userSender.id
+                            ? "bg-green-500"
+                            : "bg-blue-500"
+                        }`}
                       >
-                        <img src={"http://localhost:5000" + msg.message.filePath} onError={e => e.target.src = './vite.svg'} className="h-1/3 w-1/3"/>
-                      </a>
-                    )}
+                        {msg.message.message}
+                      </p>
+                      {msg.message.filePath && (
+                        <a
+                          href={"https://chat-app-backend-575t.onrender.com" + msg.message.filePath}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="cursor-pointer w-full h-full"
+                        >
+                          <img src={"https://chat-app-backend-575t.onrender.com" + msg.message.filePath} onError={e => e.target.src = './vite.svg'} className="h-1/3 w-1/3"/>
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span>{users.find(user=>user._id == msg.senderId)?.username}</span>
+                      <span className="text-base font-semibold">{transformDate(msg.createdAt)}</span>
+                    </div>
                   </div>
-                  {/* <span>{msg.author}</span> */}
-                  <span>{msg.createdAt}</span>
+                ))}
+              </div>
+            </ScrollToBottom>
+            {recieverId != '' && (
+              <div className="border-t-2 border-black pt-4 flex justify-between items-center ">
+                <input
+                  className="ring-2 ring-gray-500 rounded-full mr-4 px-4 py-1 flex-1"
+                  type="text"
+                  placeholder="Message..."
+                  value={message.message}
+                  onChange={(e) =>
+                    setMessage({ ...message, message: e.target.value })
+                  }
+                  onKeyDown={(e) => (e.key == "Enter" ? handleSubmit() : null)}
+                />
+                <div className="flex gap-2 items-center">
+                  <label htmlFor="file" className="text-3xl cursor-pointer"><MdOutlineFilePresent /></label>
+                  <input
+                  className="hidden"
+                    id="file"
+                    type="file"
+                    onChange={(e) =>
+                      setMessage({ ...message, file: e.target.files[0] })
+                    }
+                  />
+                <input
+                  type="submit"
+                  value={"Send Message"}
+                  className="cursor-pointer py-3 px-4 font-semibold text-lg bg-green-500 text-white inline-block rounded-xl"
+                  onClick={handleSubmit}
+                />
                 </div>
-              ))}
-            </div>
-          </ScrollToBottom>
-          {recieverId != '' && (
-            <div className="border-t-2 border-black pt-4 ">
-              <input
-                className="ring-2 ring-gray-500 rounded-full mr-4 px-4 py-1"
-                type="text"
-                value={message.message}
-                onChange={(e) =>
-                  setMessage({ ...message, message: e.target.value })
-                }
-                onKeyDown={(e) => (e.key == "Enter" ? handleSubmit() : null)}
-              />
-              <input
-                type="file"
-                onChange={(e) =>
-                  setMessage({ ...message, file: e.target.files[0] })
-                }
-              />
-              <input
-                type="submit"
-                value={"Send Message"}
-                className="cursor-pointer"
-                onClick={handleSubmit}
-              />
-            </div>
-          )}
-        </div>
-        {/*Create Rooms*/}
-        <div>
-          <input
-            type="text"
-            name="room"
-            value={room}
-            placeholder="Room..."
-            onChange={(e) => setRoom(e.target.value)}
-          />
-          <button id="create" onClick={(e) => createAndJoinRoom(e)}>
-            Create Room
-          </button>
-          <button id="join" onClick={(e) => createAndJoinRoom(e)}>
-            Join
-          </button>
+              </div>
+            )}
+          </div>
+          {/*Create Rooms*/}
+          <div className="flex flex-col gap-2">
+            <input
+              className="border rounded-lg ring-2 focus:outline-none px-3 py-1"
+              type="text"
+              name="room"
+              value={room}
+              placeholder="Room..."
+              onChange={(e) => setRoom(e.target.value)}
+            />
+            {errorRoom && <p className="text-red-500 text-lg font-semibold">{errorRoom}</p>}
+            <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 transition-all duration-500 text-white text-lg rounded-full" id="create" onClick={(e) => createAndJoinRoom(e)}>
+              Create Room
+            </button>
+            <button className="px-4 py-2 bg-green-500 hover:bg-green-600 transition-all duration-500 text-white text-lg rounded-full" id="join" onClick={(e) => createAndJoinRoom(e)}>
+              Join
+            </button>
+          </div>
         </div>
       </div>
     );
