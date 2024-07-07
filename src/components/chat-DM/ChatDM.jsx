@@ -191,7 +191,7 @@ console.log(chatName);
       <div className="flex justify-between gap-10">
         {/* Users */}
         <ul className="flex flex-col gap-4">
-          {users.map(
+          {users?.map(
             (user) =>
               userSender.id !== user._id && (
                 <li
