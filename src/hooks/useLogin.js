@@ -1,8 +1,10 @@
 import { useState } from "react";
+import useUser from "./useUser";
 
 export default function useLogin(){
     const [loading,setLoading] = useState(false)
     const [error,setError] = useState(null)
+    const {setUser} = useUser()
 
     async function login(userSignIn){
         setLoading(true)
@@ -18,9 +20,9 @@ export default function useLogin(){
             console.log(data);
             if(response.ok){
                 setError(null)
-                // setUser({username:userRegistration.username,email:userRegistration.email,token:data.token})
-                window.localStorage.setItem('token',`Bearer ${data.token}`)
-                location.pathname = '/chat'
+                setUser(data.data)
+                window.localStorage.setItem('token',`Bearer ${data.data.token}`)
+                location.pathname = '/chatDM'
                 console.log('gg');
             }else setError(data.message)
         } catch (error) {

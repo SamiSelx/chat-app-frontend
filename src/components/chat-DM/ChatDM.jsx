@@ -4,6 +4,7 @@ import useUser from "../../hooks/useUser"
 import useSocket from "../../hooks/useSocket"
 import { MdOutlineFilePresent } from "react-icons/md";
 import { transformDate } from "../../utils/transformData";
+import { Navigate } from "react-router-dom";
 
 export default function ChatDM(){
     const [users,setUsers] = useState([])
@@ -16,12 +17,15 @@ export default function ChatDM(){
     const [isRoom,setIsRoom] = useState(false)
     const [errorRoom,setErrorRoom] = useState(null)
     const [chatName,setChatName]= useState('')
-    // const [rommList,setRoomList] = useState([])
+    const [onlineUsers,setOnlineUsers] = useState([])
+    const [isSelected,setIsSelected] = useState(false)
+
+
     useEffect(()=>{
       async function getConversation(){
-          console.log(recieverId);
           const endpoint = isRoom ? 'room/'+recieverId :recieverId 
-          const response = await fetch('https://chat-app-backend-575t.onrender.com/api/message/'+endpoint,{
+          try {
+            const response = await fetch('http://localhost:5000/api/message/'+endpoint,{
               method:'GET',
               headers:{
                   'content-type':'application/json',
@@ -33,25 +37,16 @@ export default function ChatDM(){
               console.log(data);
               data.data ? setMessageList(data.data.messages) : setMessageList([])
           }
+          } catch (error) {
+            console.log(error);
+          }
       }
-      getConversation()
+      if(recieverId) getConversation()
       if (userSender) {
         console.log("joining room");
         socket.emit("join-room", [userSender.id]);
         socket.on("recieve-message", (message) => {
-          // const isChannel = message.senderId == recieverId;
-          // console.log("on channel ", isChannel);
-          // console.log("from recieve socket", message);
-          // console.log("from socket", userSender);
-
-          // console.log("inside socket", messageList);
-
-          // problem of listening, can't get recieveId and isRoom cuz event start on the first render so value won't change
           const room = userSender.room.find((r) => r == message.recieverId);
-          // if(isRoom){
-          //   console.log('into room');
-          //   if(message.recieverId == recieverId) setMessageList(list => [...list,message])
-          // }else
           if(room){
               if(recieverId !== message.recieverId) return
               setMessageList((list) => [...list, message]);
@@ -59,24 +54,19 @@ export default function ChatDM(){
             if ((message.recieverId == userSender.id) && (message.senderId == recieverId))
               setMessageList((list) => [...list, message]);
           }
-          
-      console.log('timess inside On',recieverId,room,'message is ',message)
         });
       }
-      console.log('timess inside real',recieverId)
       return ()=>{
         socket.off('recieve-message')
       }
-      
-
   },[socket,recieverId])
-
-  useEffect(()=> console.log('timess',recieverId),[socket,recieverId])
+  console.log('reciever ',recieverId);
 
     useEffect(()=>{
         // fetch all users
         async function getUsers(){
-            const response = await fetch('https://chat-app-backend-575t.onrender.com/api/user',{
+            try {
+              const response = await fetch('http://localhost:5000/api/user',{
                 method:'GET',
                 headers:{
                     'content-type':'application/json',
@@ -84,39 +74,53 @@ export default function ChatDM(){
                 }
             })
             const data = await response.json()
+            console.log(data);
             if(response.ok){
                 setUsers(data.data)
             }
+            } catch (error) {
+              console.log(error);
+            }
         }
         getUsers()
-        
-    },[socket])
+        // if(userSender) socket.emit('online',userSender.id)  
+        // socket.on('status-user',user=>{
+        //   console.log('user is online ',user);
+        //   setUserStatus(users=>[...users,user])
+        // })
+        // socket.on('disconnect',()=>{
+        //   socket.emit('offline',userSender.id)
+        // })
+        if (userSender) {
+          socket.emit("join-room", userSender.room);
+          socket.emit('addOnlineUser',userSender.id)
+        }
+        socket.on('getOnlineUsers',users=>{
+          console.log('online users',users);
+          setOnlineUsers(users)
+        })
+    },[userSender,socket])
     
-    useEffect(() => {
-      if (userSender) {
-        socket.emit("join-room", userSender.room);
-      }
-    }, [userSender, socket]);
-
     function handleReciever(e,name){
-        console.log(e.target.id);
         setChatName(name)
         setIsRoom(false)
         setRecieverId(e.target.id)
+        setIsSelected(true)
     }
     function handleRoom(e,name){
       setIsRoom(true)
       setChatName(name)
       setRecieverId(e.target.id)
+      setIsSelected(true)
     }
     async function handleSubmit(){
-        // console.log(socket.id);
-        const endpoint = isRoom ? 'room/'+recieverId :recieverId 
+          const endpoint = isRoom ? 'room/'+recieverId :recieverId 
+          if(message.message == "" && !message.file) return
         const formData = new FormData()
         formData.append('message',message.message)
         formData.append('file',message.file)
         try {
-          const response = await fetch(`https://chat-app-backend-575t.onrender.com/api/message/send/${endpoint}`,{
+          const response = await fetch(`http://localhost:5000/api/message/send/${endpoint}`,{
             method:'POST',
             body:formData,
             headers:{
@@ -129,6 +133,7 @@ export default function ChatDM(){
           console.log(data.data.createdAt);
             setMessageList([...messageList,data.data])
             setMessage({message:'',file:null})
+            console.log(data.data);
             socket.emit("message-dm", data.data);
             
         }
@@ -141,7 +146,7 @@ export default function ChatDM(){
       async function createAndJoinRoom(e){
         const endpoint = e.target.id
         if(room == "") return
-        const response = await fetch('https://chat-app-backend-575t.onrender.com/api/room/'+endpoint,{
+        const response = await fetch('http://localhost:5000/api/room/'+endpoint,{
             method:'POST',
             body:JSON.stringify({roomName:room}),
             headers:{
@@ -163,37 +168,14 @@ export default function ChatDM(){
         }
 
       }
-    //   async function createRoom(){
-    //     const response = await fetch('https://chat-app-backend-575t.onrender.com/api/room/create',{
-    //         method:'POST',
-    //         body:JSON.stringify({roomName:room}),
-    //         headers:{
-    //             'content-type':'application/json',
-    //             'authorization':localStorage.getItem('token')
-    //         }
-    //     })
-    //     try {
-    //         const data = await response.json()
-    //         console.log(data);
-    //         setUser({...userSender,room:[...userSender.room,room]})
-    //         setRoom('')
-    //     } catch (error) {
-    //         console.log(error);
-    //     }
-
-    //     socket.emit("join-room",room)
-    //   }
-    
-
-      
-console.log(chatName);
+      if(!userSender) <Navigate to={'/'}/>
     return (
-      <div className="flex justify-between gap-10">
+      <div className="container mx-auto px-4 flex justify-center  gap-10">
         {/* Users */}
         <ul className="flex flex-col gap-4">
           {users?.map(
             (user) =>
-              userSender.id !== user._id && (
+              userSender?.id !== user._id && (
                 <li
                   key={user._id}
                   id={user._id}
@@ -201,11 +183,12 @@ console.log(chatName);
                   onClick={(e) => handleReciever(e,user.username)}
                 >
                   {user.username}
+                  {onlineUsers.find(us => us.id == user._id) ? <h1>online</h1> : <h1>Offline</h1>}
                 </li>
               )
           )}
           <h2>Rooms : </h2>
-          {userSender?.room.map((roomName, index) => (
+          {userSender?.room?.map((roomName, index) => (
             <li
               onClick={(e) => handleRoom(e,roomName)}
               key={index}
@@ -216,20 +199,20 @@ console.log(chatName);
             </li>
           ))}
         </ul>
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 flex-1">
           {/*Chat*/}
           <div className="flex flex-col gap-3 shadow-md h-96 justify-between p-4">
             <h1 className="text-2xl font-semibold text-center pb-2 border-b-2 border-b-blue-500">{chatName}</h1>
             <ScrollToBottom className="overflow-y-auto">
               <div className="flex flex-col gap-4 ">
-                {messageList.map((msg, index) => (
+                {messageList?.map((msg, index) => (
                   <div
                     key={index}
-                    className={`${msg.senderId !== userSender.id ? "self-end" : "self-start"} w-1/3`}
+                    className={`${msg.senderId !== userSender.id ? "self-end items-end" : "self-start"} w-1/3 flex flex-col`}
                   >
                     <div>
                       <p
-                        className={`px-4 py-2 w-fit rounded-full text-white ${
+                        className={`px-4 py-2 w-fit rounded-full text-white ${msg.message.message == "" ? "hidden" : ""} ${
                           msg.senderId !== userSender.id
                             ? "bg-green-500"
                             : "bg-blue-500"
@@ -239,12 +222,12 @@ console.log(chatName);
                       </p>
                       {msg.message.filePath && (
                         <a
-                          href={"https://chat-app-backend-575t.onrender.com" + msg.message.filePath}
+                          href={"http://localhost:5000" + msg.message.filePath}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="cursor-pointer w-full h-full"
                         >
-                          <img src={"https://chat-app-backend-575t.onrender.com" + msg.message.filePath} onError={e => e.target.src = './vite.svg'} className="h-1/3 w-1/3"/>
+                          <img src={"http://localhost:5000" + msg.message.filePath} onError={e => e.target.src = './vite.svg'} className="h-1/3 w-1/3"/>
                         </a>
                       )}
                     </div>
@@ -256,7 +239,7 @@ console.log(chatName);
                 ))}
               </div>
             </ScrollToBottom>
-            {recieverId != '' && (
+            {recieverId != '' && isSelected && (
               <div className="border-t-2 border-black pt-4 flex justify-between items-center ">
                 <input
                   className="ring-2 ring-gray-500 rounded-full mr-4 px-4 py-1 flex-1"
