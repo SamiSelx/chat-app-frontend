@@ -11,7 +11,7 @@ export default function Room() {
     if(room === 'global') return
     const roomName = room == '' ? 'global' : room
     setUser({...user,room:roomName})
-    fetch('https://chat-app-backend-575t.onrender.com/api/user/me',{
+    fetch('https://chat-app-backend-1-v7ey.onrender.com/api/user/me',{
         method:'PATCH',
         body:JSON.stringify({room}),
         headers:{

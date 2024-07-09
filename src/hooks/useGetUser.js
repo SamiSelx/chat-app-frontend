@@ -8,7 +8,7 @@ export default function useGetUser(){
     useEffect(()=>{
         async function getUser(token){
             try {
-                const response = await fetch('https://chat-app-backend-575t.onrender.com/api/user/me',{
+                const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/user/me',{
                     method:'GET',
                     headers:{
                         'content-type':'application/json',

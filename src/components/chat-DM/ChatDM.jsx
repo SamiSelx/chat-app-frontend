@@ -25,7 +25,7 @@ export default function ChatDM(){
       async function getConversation(){
           const endpoint = isRoom ? 'room/'+recieverId :recieverId 
           try {
-            const response = await fetch('https://chat-app-backend-575t.onrender.com/api/message/'+endpoint,{
+            const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/message/'+endpoint,{
               method:'GET',
               headers:{
                   'content-type':'application/json',
@@ -66,7 +66,7 @@ export default function ChatDM(){
         // fetch all users
         async function getUsers(){
             try {
-              const response = await fetch('https://chat-app-backend-575t.onrender.com/api/user',{
+              const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/user',{
                 method:'GET',
                 headers:{
                     'content-type':'application/json',
@@ -120,7 +120,7 @@ export default function ChatDM(){
         formData.append('message',message.message)
         formData.append('file',message.file)
         try {
-          const response = await fetch(`https://chat-app-backend-575t.onrender.com/api/message/send/${endpoint}`,{
+          const response = await fetch(`https://chat-app-backend-1-v7ey.onrender.com/api/message/send/${endpoint}`,{
             method:'POST',
             body:formData,
             headers:{
@@ -146,7 +146,7 @@ export default function ChatDM(){
       async function createAndJoinRoom(e){
         const endpoint = e.target.id
         if(room == "") return
-        const response = await fetch('https://chat-app-backend-575t.onrender.com/api/room/'+endpoint,{
+        const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/room/'+endpoint,{
             method:'POST',
             body:JSON.stringify({roomName:room}),
             headers:{
@@ -168,6 +168,31 @@ export default function ChatDM(){
         }
 
       }
+      
+      async function leaveRoom(e){
+        try {
+          const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/room/leave',{
+            method:'POST',
+            body:JSON.stringify({roomName:room}),
+            headers:{
+              'content-type':'application/json',
+              'authorization':localStorage.getItem('token')
+            }
+          })
+          const data = await response.json()
+          console.log(data);
+          if(response.ok){
+            const userRoom = userSender.room.filter(r=> r !== room)
+            setUser({...userSender,room:userRoom})
+            setErrorRoom(null)
+          }else{
+            setErrorRoom(data.message)
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
       if(!userSender) <Navigate to={'/'}/>
     return (
       <div className="container mx-auto px-4 flex justify-center  gap-10">
@@ -222,12 +247,12 @@ export default function ChatDM(){
                       </p>
                       {msg.message.filePath && (
                         <a
-                          href={"https://chat-app-backend-575t.onrender.com" + msg.message.filePath}
+                          href={"https://chat-app-backend-1-v7ey.onrender.com" + msg.message.filePath}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="cursor-pointer w-full h-full"
                         >
-                          <img src={"https://chat-app-backend-575t.onrender.com" + msg.message.filePath} onError={e => e.target.src = './vite.svg'} className="h-1/3 w-1/3"/>
+                          <img src={"https://chat-app-backend-1-v7ey.onrender.com" + msg.message.filePath} onError={e => e.target.src = './vite.svg'} className="h-1/3 w-1/3"/>
                         </a>
                       )}
                     </div>
@@ -287,6 +312,9 @@ export default function ChatDM(){
             </button>
             <button className="px-4 py-2 bg-green-500 hover:bg-green-600 transition-all duration-500 text-white text-lg rounded-full" id="join" onClick={(e) => createAndJoinRoom(e)}>
               Join
+            </button>
+            <button className="px-4 py-2 bg-red-500 hover:bg-red-600 transition-all duration-500 text-white text-lg rounded-full" id="leave" onClick={(e) => leaveRoom(e)}>
+              Leave
             </button>
           </div>
         </div>

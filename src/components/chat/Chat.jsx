@@ -20,7 +20,7 @@ export default function Chat(){
   };
   useEffect(()=>{
       console.log('user inside fetch',user);
-      fetch(`https://chat-app-backend-575t.onrender.com/api/room/${user?.room}`).then(res=>res.json()).then(data=>{
+      fetch(`https://chat-app-backend-1-v7ey.onrender.com/api/room/${user?.room}`).then(res=>res.json()).then(data=>{
         console.log(data.data);
         setMessageList(data.data.conversation)
       }).catch(err=>console.log(err))
