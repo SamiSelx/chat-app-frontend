@@ -12,7 +12,7 @@ export default  function useRegistre(){
     async function register(userRegistration) {
         setLoading(true)
       try {
-        const response = await fetch("https://chat-app-backend-1-v7ey.onrender.com/api/user/register", {
+        const response = await fetch("https://chat-app-backend-authentication.onrender.com/api/user/register", {
           method: "POST",
           body: JSON.stringify(userRegistration),
           headers: {

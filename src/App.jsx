@@ -8,6 +8,7 @@ import Home from "./components/home/Home";
 import ChatDM from "./components/chat-DM/ChatDM";
 import { Link } from "react-router-dom";
 import useLogout from "./hooks/useLogout";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const user = useGetUser()
@@ -31,6 +32,7 @@ function App() {
 
   return (
     <main className="min-h-screen flex justify-center flex-col gap-8 items-center">
+      <Toaster/>
       <div className="flex justify-between items-center">
         <p className="font-semibold text-xl text-blue-500">CHAT APP</p>
         <div className="container mx-auto px-4 flex-1">

@@ -6,9 +6,9 @@ export default function useGetUser(){
     const {user,setUser} = useUser()
     const socket = useSocket()
     useEffect(()=>{
-        async function getUser(token){
+        async function getUser(token){ //https://chat-app-backend-1-v7ey.onrender.com
             try {
-                const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/user/me',{
+                const response = await fetch('https://chat-app-backend-authentication.onrender.com/api/user/me',{
                     method:'GET',
                     headers:{
                         'content-type':'application/json',

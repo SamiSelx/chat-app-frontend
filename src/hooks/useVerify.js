@@ -1,20 +1,16 @@
-import { useState } from "react";
-// import useSocket from "./useSocket";
-import useUser from "./useUser";
-
-export default function useLogin(){
+import { useState } from "react"
+import useUser from "./useUser"
+export default function useVerify(){
     const {setUser} = useUser()
     const [loading,setLoading] = useState(false)
     const [error,setError] = useState(null)
-    const [success,setSuccess] = useState(null)
-    // const socket = useSocket()
 
-    async function login(userSignIn){
+    async function verify(userInfo){
         setLoading(true)
         try {
-            const response = await fetch('https://chat-app-backend-authentication.onrender.com/api/user/login',{
+            const response = await fetch('https://chat-app-backend-authentication.onrender.comapi/user/verifyOtp',{
                 method:'POST',
-                body:JSON.stringify(userSignIn),
+                body:JSON.stringify(userInfo),
                 headers:{
                     'content-type':'application/json'
                 }
@@ -24,12 +20,10 @@ export default function useLogin(){
             if(response.ok){
                 setError(null)
                 console.log('user after login ',data);
-                window.localStorage.setItem('user',JSON.stringify(userSignIn))
-                setSuccess(data.message)
-                // setUser(data.data)
-                // window.localStorage.setItem('token',`Bearer ${data.data.token}`)
+                setUser(data.data)
+                window.localStorage.setItem('token',`Bearer ${data.data.token}`)
                 // socket.emit('online',data.data._doc._id) // send from backend user information
-                // location.pathname = '/chatDM'
+                location.pathname = '/chatDM'
             }else {
                 setError(data.message)
             }
@@ -38,5 +32,6 @@ export default function useLogin(){
         }
         setLoading(false)
     }
-    return {loading,error,success,login}
+
+    return {loading,error,verify}
 }

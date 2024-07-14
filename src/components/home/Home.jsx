@@ -7,7 +7,7 @@ export default function Home(){
     useEffect(()=>{
         // fetch all users
         async function getUsers(){
-            const response = await fetch('https://chat-app-backend-1-v7ey.onrender.com/api/user',{
+            const response = await fetch('https://chat-app-backend-authentication.onrender.com/api/user',{
                 method:'GET',
                 headers:{
                     'content-type':'application/json',
