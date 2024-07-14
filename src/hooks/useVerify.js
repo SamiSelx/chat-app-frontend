@@ -8,7 +8,7 @@ export default function useVerify(){
     async function verify(userInfo){
         setLoading(true)
         try {
-            const response = await fetch('https://chat-app-backend-authentication.onrender.comapi/user/verifyOtp',{
+            const response = await fetch('https://chat-app-backend-authentication.onrender.com/api/user/verifyOtp',{
                 method:'POST',
                 body:JSON.stringify(userInfo),
                 headers:{
